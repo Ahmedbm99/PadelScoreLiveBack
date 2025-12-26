@@ -8,9 +8,9 @@ export const config = {
   },
   jwt: {
     secret: process.env.JWT_SECRET || 'change-me-to-a-strong-secret-key',
-    expiresIn: '1h'
+    expiresIn: '24h'
   },
-  corsOrigin: process.env.CORS_ORIGIN || 'http://192.168.100.123:5173'
+  corsOrigin: 'http://192.168.1.192:5173'
 };
 
 
