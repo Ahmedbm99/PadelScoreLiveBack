@@ -15,6 +15,7 @@ router.post('/login', async (req, res) => {
 
   try {
     const pool = getPool();
+    console.log(pool);
     const [rows] = await pool.query('SELECT * FROM users WHERE username = ? LIMIT 1', [username]);
     const user = rows[0];
 console.log(user);

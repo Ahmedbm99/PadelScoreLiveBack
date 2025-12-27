@@ -7,7 +7,7 @@ export const config = {
     database: process.env.DB_NAME || 'railway',
     port: process.env.DB_PORT || 10923,      // important car Railway n’utilise pas le port 3306 par défaut
   ssl: {
-    rejectUnauthorized: true              // nécessaire pour Railway
+    rejectUnauthorized: false              // nécessaire pour Railway
   }
   },
   jwt: {
