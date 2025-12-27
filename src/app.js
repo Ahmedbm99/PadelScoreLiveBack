@@ -11,16 +11,29 @@ dotenv.config();
 
 const app = express();
 
-app.use(
-  cors({
-    origin: config.corsOrigin,
-    methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-  })
-);
+// === Middleware CORS ===
+const allowedOrigins = [config.corsOrigin]; // ex: 'https://ahmedbm99.github.io'
 
+app.use(cors({
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true); // autorise les requêtes directes (Postman, serveur)
+    if (allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+// Gérer les preflight OPTIONS pour toutes les routes
+app.options('*', cors());
+
+// === Middleware JSON ===
 app.use(express.json());
 
+// === Routes ===
 app.get('/', (req, res) => {
   res.json({ status: 'ok' });
 });
@@ -30,12 +43,10 @@ app.use(terrainRoutes);
 app.use(matchRoutes);
 app.use(adminRoutes);
 
+// === 404 ===
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found' });
 });
 
-app.listen(config.port, '0.0.0.0' ,  () => {
-  console.log(`Node backend listening on http://0.0.0.0:${config.port}`);
-});
-
-
+// === Export pour Vercel serverless ===
+export default app;
