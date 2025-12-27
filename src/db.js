@@ -10,9 +10,11 @@ export function getPool() {
       user: config.db.user,
       password: config.db.password,
       database: config.db.database,
+      port: config.db.port,
       waitForConnections: true,
       connectionLimit: 10,
-      queueLimit: 0
+      queueLimit: 0,
+      ssl: { rejectUnauthorized: true } 
     });
   }
   return pool;
