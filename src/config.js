@@ -14,7 +14,7 @@ export const config = {
     secret: process.env.JWT_SECRET || 'change-me-to-a-strong-secret-key',
     expiresIn: '24h'
   },
-  corsOrigin: 'http://192.168.1.192:5173'
+  corsOrigin: 'https://ahmedbm99.github.io'
 };
 
 
