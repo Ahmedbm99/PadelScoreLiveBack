@@ -36,7 +36,7 @@ app.use(express.json());
 
 // === Routes ===
 app.get('/', (req, res) => {
-  res.json({ status: 'ok' });
+  res.json({ status: config.corsOrigin });
 });
 
 app.use(authRoutes);
