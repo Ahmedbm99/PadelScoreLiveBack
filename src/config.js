@@ -12,7 +12,7 @@ export const config = {
     secret: process.env.JWT_SECRET || 'change-me-to-a-strong-secret-key',
     expiresIn: '24h'
   },
-  corsOrigin: 'http://localhost:5173'
+  corsOrigin: process.env.HOST
 };
 
 
