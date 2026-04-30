@@ -1,23 +1,22 @@
-import mysql from 'mysql2/promise';
+import pg from 'pg';
 import { config } from './config.js';
+
+const { Pool } = pg;
 
 let pool;
 
 export function getPool() {
   if (!pool) {
-    pool = mysql.createPool({
-      host: config.db.host,
-      user: config.db.user,
-      password: config.db.password,
-      database: config.db.database,
-      port: config.db.port,
-      waitForConnections: true,
-      connectionLimit: 10,
-      queueLimit: 0,
-      ssl: { rejectUnauthorized: false } 
+    const useSsl = String(config.db.sslMode || '').toLowerCase() !== 'disable';
+
+    pool = new Pool({
+      connectionString: config.db.connectionString,
+      ssl: useSsl ? { rejectUnauthorized: false } : false,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000
     });
   }
+
   return pool;
 }
-
-

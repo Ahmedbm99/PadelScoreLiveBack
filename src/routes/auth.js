@@ -15,17 +15,15 @@ router.post('/login', async (req, res) => {
 
   try {
     const pool = getPool();
-    console.log(pool);
-    const [rows] = await pool.query('SELECT * FROM users WHERE username = ? LIMIT 1', [username]);
+    const { rows } = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
     const user = rows[0];
-console.log(user);
+
     if (!user) {
-      return res.status(401).json({ message: 'Identifiants invalides' });
+      return res.status(400).json({ message: 'Identifiants invalides' });
     }
-const ok = await bcrypt.compare(password, user.password_hash);
-    console.log(ok);
+    const ok = await bcrypt.compare(password, user.password_hash);
     if (!ok) {
-      return res.status(401).json({ message: 'Identifiants invalides' });
+      return res.status(400).json({ message: 'Identifiants invalides' });
     }
 
     const payload = {
@@ -37,7 +35,7 @@ const ok = await bcrypt.compare(password, user.password_hash);
 
     const token = jwt.sign(payload, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
 
-    return res.json({ token, user: payload });
+    return res.json({ token });
   } catch (err) {
     console.error(err);
     return res.status(500).json({ message: 'Erreur serveur' });

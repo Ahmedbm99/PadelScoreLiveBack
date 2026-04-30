@@ -10,7 +10,7 @@ const router = express.Router();
 router.get('/players', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const pool = getPool();
-    const [rows] = await pool.query(
+    const { rows } = await pool.query(
       'SELECT id, first_name, last_name, created_at FROM players ORDER BY id DESC'
     );
     res.json(rows);
@@ -27,11 +27,11 @@ router.post('/players', requireAuth, requireRole('admin'), async (req, res) => {
   }
   try {
     const pool = getPool();
-    const [result] = await pool.query(
-      'INSERT INTO players (first_name, last_name) VALUES (?, ?)',
+    const { rows } = await pool.query(
+      'INSERT INTO players (first_name, last_name) VALUES ($1, $2) RETURNING id',
       [first_name, last_name]
     );
-    res.status(201).json({ id: result.insertId, first_name, last_name });
+    res.status(201).json({ id: rows[0].id, first_name, last_name });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Erreur serveur' });
@@ -43,7 +43,7 @@ router.post('/players', requireAuth, requireRole('admin'), async (req, res) => {
 router.get('/categories', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const pool = getPool();
-    const [rows] = await pool.query('SELECT id, code, label FROM categories ORDER BY id ASC');
+    const { rows } = await pool.query('SELECT id, code, label FROM categories ORDER BY id ASC');
     res.json(rows);
   } catch (err) {
     console.error(err);
@@ -56,7 +56,7 @@ router.get('/categories', requireAuth, requireRole('admin'), async (req, res) =>
 router.get('/pairs', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const pool = getPool();
-    const [rows] = await pool.query(
+    const { rows } = await pool.query(
       `SELECT
          p.id,
          p.category_id,
@@ -101,11 +101,11 @@ router.post('/pairs', requireAuth, requireRole('admin'), async (req, res) => {
 
   try {
     const pool = getPool();
-    const [result] = await pool.query(
-      'INSERT INTO pairs (player1_id, player2_id, category_id) VALUES (?, ?, ?)',
+    const { rows } = await pool.query(
+      'INSERT INTO pairs (player1_id, player2_id, category_id) VALUES ($1, $2, $3) RETURNING id',
       [player1_id, player2_id, category_id]
     );
-    res.status(201).json({ id: result.insertId, player1_id, player2_id, category_id });
+    res.status(201).json({ id: rows[0].id, player1_id, player2_id, category_id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Erreur serveur' });
@@ -117,8 +117,8 @@ router.post('/pairs', requireAuth, requireRole('admin'), async (req, res) => {
 router.get('/users/supervisors', requireAuth, requireRole('admin'), async (req, res) => {
   try {
     const pool = getPool();
-    const [rows] = await pool.query(
-      'SELECT id, username, terrain_id, created_at FROM users WHERE role = "supervisor" ORDER BY id DESC'
+    const { rows } = await pool.query(
+      "SELECT id, username, terrain_id, created_at FROM users WHERE role = 'supervisor' ORDER BY id DESC"
     );
     res.json(rows);
   } catch (err) {
@@ -134,18 +134,18 @@ router.post('/users/supervisors', requireAuth, requireRole('admin'), async (req,
   }
   try {
     const pool = getPool();
-    const [existing] = await pool.query('SELECT id FROM users WHERE username = ? LIMIT 1', [
+    const { rows: existing } = await pool.query('SELECT id FROM users WHERE username = $1 LIMIT 1', [
       username
     ]);
     if (existing[0]) {
       return res.status(409).json({ message: 'Nom d’utilisateur déjà utilisé' });
     }
     const hash = await bcrypt.hash(password, 10);
-    const [result] = await pool.query(
-      'INSERT INTO users (username, password_hash, role, terrain_id) VALUES (?, ?, "supervisor", ?)',
+    const { rows } = await pool.query(
+      "INSERT INTO users (username, password_hash, role, terrain_id) VALUES ($1, $2, 'supervisor', $3) RETURNING id",
       [username, hash, terrain_id]
     );
-    res.status(201).json({ id: result.insertId, username, terrain_id });
+    res.status(201).json({ id: rows[0].id, username, terrain_id });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: 'Erreur serveur' });

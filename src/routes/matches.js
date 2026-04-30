@@ -4,13 +4,26 @@ import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = express.Router();
 
+function normalizeScoreState(rawScoreState) {
+  if (!rawScoreState) return null;
+  if (typeof rawScoreState === 'object') return rawScoreState;
+  if (typeof rawScoreState === 'string') {
+    try {
+      return JSON.parse(rawScoreState);
+    } catch {
+      return null;
+    }
+  }
+  return null;
+}
+
 // GET /match/:terrain_id (public pour spectateurs)
 router.get('/match/:terrainId', async (req, res) => {
   const { terrainId } = req.params;
   try {
     const pool = getPool();
 
-    const [rows] = await pool.query(
+    const { rows } = await pool.query(
       `SELECT
          m.*,
          p1.id   AS t1_pair_id,
@@ -34,7 +47,7 @@ router.get('/match/:terrainId', async (req, res) => {
        LEFT JOIN players pl22 ON p2.player2_id = pl22.id
        LEFT JOIN categories c1 ON p1.category_id = c1.id
        LEFT JOIN categories c2 ON p2.category_id = c2.id
-       WHERE m.terrain_id = ?
+       WHERE m.terrain_id = $1
        LIMIT 1`,
       [terrainId]
     );
@@ -52,12 +65,12 @@ router.get('/match/:terrainId', async (req, res) => {
         tieBreakPoints: { team1: 0, team2: 0 },
         matchFinished: false
       };
-      const [result] = await pool.query(
-        'INSERT INTO matches (terrain_id, score_state) VALUES (?, ?)',
+      const { rows: insertedRows } = await pool.query(
+        'INSERT INTO matches (terrain_id, score_state) VALUES ($1, $2) RETURNING id',
         [terrainId, JSON.stringify(defaultState)]
       );
       match = {
-        id: result.insertId,
+        id: insertedRows[0].id,
         terrain_id: Number(terrainId),
         score_state: JSON.stringify(defaultState),
         t1_pair_id: null,
@@ -95,6 +108,17 @@ router.get('/match/:terrainId', async (req, res) => {
       match.t2_p1_first && match.t2_p1_last ? `${match.t2_p1_first} ${match.t2_p1_last}` : '';
     const t2p2Full =
       match.t2_p2_first && match.t2_p2_last ? `${match.t2_p2_first} ${match.t2_p2_last}` : '';
+    const safeScoreState =
+      normalizeScoreState(match.score_state) || {
+        format: 'third_set',
+        currentServer: 'team1',
+        points: { team1: 0, team2: 0 },
+        games: { team1: 0, team2: 0 },
+        sets: [],
+        isTieBreak: false,
+        tieBreakPoints: { team1: 0, team2: 0 },
+        matchFinished: false
+      };
 
     return res.json({
       id: match.id,
@@ -102,7 +126,7 @@ router.get('/match/:terrainId', async (req, res) => {
       phase: match.phase || null,
       team1_pair_id: match.t1_pair_id || null,
       team2_pair_id: match.t2_pair_id || null,
-      score_state: JSON.parse(match.score_state),
+      score_state: safeScoreState,
       players: {
         team1: {
           label: team1Label,
@@ -144,7 +168,7 @@ router.put(
 
     try {
       const pool = getPool();
-      await pool.query('UPDATE matches SET score_state = ? WHERE terrain_id = ?', [
+      await pool.query('UPDATE matches SET score_state = $1 WHERE terrain_id = $2', [
         JSON.stringify(score_state),
         terrainId
       ]);
@@ -173,7 +197,7 @@ router.put(
     try {
       const pool = getPool();
       await pool.query(
-        'UPDATE matches SET team1_pair_id = ?, team2_pair_id = ? WHERE terrain_id = ?',
+        'UPDATE matches SET team1_pair_id = $1, team2_pair_id = $2 WHERE terrain_id = $3',
         [team1_pair_id, team2_pair_id, terrainId]
       );
       res.json({ message: 'Paires assignées' });

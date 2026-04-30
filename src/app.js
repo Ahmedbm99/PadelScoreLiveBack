@@ -8,6 +8,7 @@ import matchRoutes from './routes/matches.js';
 import adminRoutes from './routes/admin.js';
 
 dotenv.config();
+const PORT = process.env.PORT ;
 
 const app = express();
 
@@ -47,6 +48,8 @@ app.use(adminRoutes);
 app.use((req, res) => {
   res.status(404).json({ message: 'Not found' });
 });
-
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
+});
 // === Export pour Vercel serverless ===
 export default app;
